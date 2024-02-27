@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="description" content="GeoNarrative Template" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Parks in the States and Seattle</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script src="https://unpkg.com/scrollama"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.js"></script>
+</head>
+
+<body>
+  <section id="cover" style="background: url('img/cover.jpg') no-repeat center center;  background-size: cover;">
+    <div id="intro">
+      <h1>Parks in the States and Seattle</h1>
+    </div>
+  </section>
+  <section id="geonarrative">
+    <div id="storyboard">
+      <div id="map"></div>
+    </div>
+    <article class="scene" data-scene="0">
+      <h2>National Parks</h2>
+      <img style="margin-left: auto; margin-right: auto; width: 50%; display: block; margin-top: 10px;"
+        src="./img/yosemite.jpg" alt="Yosemite National Park">
+      <p>The United States National Park System encompasses a vast network of natural landscapes and historical
+        landmarks, offering unparalleled beauty and a rich tapestry of America's heritage. Managed by the National Park
+        Service, these protected areas aim to preserve the country's ecological and cultural treasures for future
+        generations to enjoy and learn from.</p>
+    </article>
+    <article class="scene" data-scene="1">
+      <h2>Seattle Parks</h2>
+      <p>Seattle's public parks are a verdant tapestry that weaves through the city's urban landscape, offering
+        residents and visitors alike a diverse range of natural and recreational spaces. From the expansive Discovery
+        Park to the serene Washington Park Arboretum, these green oases provide a peaceful escape from the bustling city
+        life, showcasing Seattle's commitment to preserving natural beauty and fostering community well-being.</p>
+    </article>
+    <article class="scene" data-scene="2">
+      <h2>Seattle Parks 1: Green Lake Park</h2>
+      <img style="margin-left: auto; margin-right: auto; width: 50%; display: block; margin-top: 10px;"
+        src="https://www.seattle.gov/images//images/Departments/ParksAndRecreation/Parks/GreenLake/GreenLake1.jpg"
+        alt="Green Lake Park">
+      <p>Green Lake Park, nestled in the heart of Seattle, offers a serene oasis amidst urban life. This vibrant park is
+        renowned for its beautiful lake, perfect for kayaking and paddle boarding. With lush greenery, a 2.8-mile
+        walking trail, and abundant wildlife, it's a favorite spot for both relaxation and recreation among locals and
+        visitors alike.</p>
+    </article>
+    <article class="scene" data-scene="3">
+      <h2>Seattle Parks 2: Hing Hay Park</h2>
+      <img style="margin-left: auto; margin-right: auto; width: 50%; display: block; margin-top: 10px;"
+        src="https://www.seattle.gov/images//images/Departments/ParksAndRecreation/Parks/GHI/HingHay1.jpg"
+        alt="Hing Hay Park">
+      <p>Hing Hay Park, located in the heart of Seattle's vibrant International District, serves as a cultural and
+        community hub. This urban oasis is known for its iconic red gateway, lush landscaping, and public art
+        installations, reflecting the rich heritage of the Asian American community. It's a space where locals and
+        visitors alike gather for events, relaxation, and celebration.</p>
+    </article>
+  </section>
+  <section id="footer">
+    <h2>FOOTER</h2>
+    <p style="text-align: center; font-size: 0.8em; color: #666; margin-top: 10px;">Source: <a
+        href="https://www.nps.gov/index.htm">National Park Service</a>, <a href="https://www.seattle.gov/parks">Seattle
+        Parks and Recreation</a></p>
+  </section>
+  <script>
+    let map, scriptPanel = scrollama(), nationalParksLayer, seattleParksLayer;
+    history.scrollRestoration = "manual";
+    window.scrollTo(0, 0);
+    adjustStoryboardlSize();
+    window.addEventListener("resize", adjustStoryboardlSize);
+    function adjustStoryboardlSize() {
+      const scenes = document.getElementsByClassName("scene");
+      const storyboard = document.getElementById("storyboard");
+      let sceneH = Math.floor(window.innerHeight * 0.75);
+      for (const scene of scenes) {
+        scene.style.height = sceneH + "px";
+      }
+      let storyboardHeight = window.innerHeight;
+      let storyboardMarginTop = (window.innerHeight - storyboardHeight) / 2;
+      storyboard.style.height = storyboardHeight + "px";
+      storyboard.style.top = storyboardMarginTop + "px"
+      scriptPanel.resize();
+    }
+    mapboxgl.accessToken =
+      'pk.eyJ1IjoiamFrb2J6aGFvIiwiYSI6ImNpcms2YWsyMzAwMmtmbG5icTFxZ3ZkdncifQ.P9MBej1xacybKcDN_jehvw';
+    map = new mapboxgl.Map({
+      container: 'map',
+      style: 'https://api.maptiler.com/maps/dataviz-dark/style.json?key=Cusoe5zmfmn26glFoeoe',
+      zoom: 3.5,
+      center: [-110, 40],
+      scrollZoom: false,
+      boxZoom: false,
+      doubleClickZoom: false
+    });
+    map.loadImage('./assets/park.png', function (error, image) {
+      if (error) throw error;
+      map.addImage('park_icon', image);
+    });
+    async function geojsonFetch() {
+      let response, nationalParks, seattleParks;
+      response = await fetch("assets/NPS.geojson");
+      nationalParks = await response.json();
+      response = await fetch("assets/Park_Boundaries.geojson");
+      seattleParks = await response.json();
+      map.on('load', () => {
+        nationalParksLayer = {
+          'id': 'nationalParks-points',
+          'type': 'symbol',
+          'source': 'nationalParks-src',
+          'layout': {
+            'icon-image': 'park_icon',
+            'icon-size': 0.05
+          }
+        };
+        seattleParksLayer = {
+          'id': 'seattleParks-points',
+          'type': 'symbol',
+          'source': 'seattleParks-src',
+          'layout': {
+            'icon-image': 'park_icon',
+            'icon-size': 0.05
+          }
+        };
+        map.addSource('nationalParks-src', {
+          type: 'geojson',
+          data: nationalParks
+        });
+        map.addSource('seattleParks-src', {
+          type: 'geojson',
+          data: seattleParks
+        });
+        scriptPanel
+          .setup({
+            step: ".scene",
+            offset: 0.33,
+            debug: false
+          })
+          .onStepEnter(handleSceneEnter)
+          .onStepExit(handleSceneExit);
+        async function handleSceneEnter(response) {
+          var index = response.index;
+          if (index === 0) {
+            await map.flyTo({
+              center: [-110, 40],
+              zoom: 3.5,
+              pitch: 0,
+              speed: 0.5
+            });
+            map.removeLayer('seattleParks-points');
+            map.addLayer(nationalParksLayer);
+            document.getElementById("cover").style.visibility = "hidden";
+          } else if (index === 1) {
+            await map.flyTo({
+              center: [-122.93, 47.53],
+              zoom: 8,
+              pitch: 0,
+              speed: 0.5
+            });
+            map.removeLayer('nationalParks-points');
+
+            map.addLayer(seattleParksLayer);
+          } else if (index === 2) {
+            await map.flyTo({
+              center: [-122.3444, 47.6802],
+              zoom: 15,
+              pitch: 0,
+              speed: 0.5
+            });
+          } else if (index === 3) {
+            await map.flyTo({
+              center: [-122.335371, 47.598530],
+              zoom: 15,
+              pitch: 0,
+              speed: 0.5
+            });
+          }
+        }
+        function handleSceneExit(response) {
+          var index = response.index;
+          if (index === 0) {
+            if (response.direction == 'down') {
+              document.getElementById("cover").style.visibility = "hidden";
+            } else {
+              document.getElementById("cover").style.visibility = "visible";
+            }
+          }
+        }
+      });
+    };
+    geojsonFetch();
+  </script>
+</body>
+
+</html>
